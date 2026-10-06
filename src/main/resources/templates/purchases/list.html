@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Purchase History')}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark">Purchase History &amp; Orders</h3>
+                    <p class="text-muted mb-0">Search, filter, and audit all customer order transactions and line items.</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a th:href="@{/reports(type='sales')}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        <span>Generate Sales Report</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filter Toolbar -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/purchases}" method="get" class="row g-2 align-items-end">
+                        <!-- Search -->
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Customer Search</label>
+                            <input type="text" name="search" th:value="${search}" class="form-control form-control-sm" placeholder="Search customer...">
+                        </div>
+
+                        <!-- Customer Dropdown -->
+                        <div class="col-12 col-md-2">
+                            <label class="form-label small fw-semibold text-muted mb-1">Customer</label>
+                            <select name="customerId" class="form-select form-select-sm">
+                                <option value="" th:selected="${selectedCustomerId == null}">All Customers</option>
+                                <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.name}" th:selected="${selectedCustomerId == c.id}">Customer</option>
+                            </select>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="col-12 col-md-2">
+                            <label class="form-label small fw-semibold text-muted mb-1">Product Category</label>
+                            <select name="category" class="form-select form-select-sm">
+                                <option value="ALL" th:selected="${selectedCategory == 'ALL'}">All Categories</option>
+                                <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat}" th:selected="${selectedCategory == cat}">Category</option>
+                            </select>
+                        </div>
+
+                        <!-- Start Date -->
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
+                            <input type="date" name="startDate" th:value="${startDate}" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- End Date -->
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
+                            <input type="date" name="endDate" th:value="${endDate}" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="col-12 col-md-1 d-flex gap-1">
+                            <button type="submit" class="btn btn-primary btn-sm w-100" title="Filter"><i class="bi bi-funnel"></i></button>
+                            <a th:href="@{/purchases}" class="btn btn-outline-secondary btn-sm" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aggregated Metric Cards for Filtered Set -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="metric-card py-3">
+                        <span class="metric-title">Filtered Spending Volume</span>
+                        <div class="metric-value text-primary fs-3" th:text="'$' + ${#numbers.formatDecimal(totalSpend, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+                        <small class="text-muted">Total sum of matches</small>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="metric-card py-3">
+                        <span class="metric-title">Orders Count</span>
+                        <div class="metric-value text-dark fs-3" th:text="${totalOrdersCount}">0</div>
+                        <small class="text-muted">Matching order records</small>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="metric-card py-3">
+                        <span class="metric-title">Average Order Value (AOV)</span>
+                        <div class="metric-value text-success fs-3" th:text="'$' + ${#numbers.formatDecimal(avgOrderValue, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+                        <small class="text-muted">Average basket size</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="table-card">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Showing <strong class="text-dark" th:text="${orderPage.numberOfElements}">0</strong> of <strong class="text-dark" th:text="${totalElements}">0</strong> orders</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Purchase Date</th>
+                            <th>Items &amp; Categories</th>
+                            <th>Total Amount</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="order : ${orderPage.content}">
+                            <td><strong class="text-primary" th:text="'#' + ${order.id}">#1001</strong></td>
+                            <td>
+                                <a th:href="@{/customers/view/{id}(id=${order.customer.id})}" class="fw-bold text-dark text-decoration-none" th:text="${order.customer.name}">Customer Name</a>
+                                <div class="text-muted small" th:text="${order.customer.email}">email@example.com</div>
+                            </td>
+                            <td class="small" th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}">Oct 01, 2026</td>
+                            <td>
+                                <div th:each="item : ${order.items}" class="small text-truncate" style="max-width: 320px;">
+                                    <span class="badge badge-soft-secondary me-1" th:text="${item.product.category}">Cat</span>
+                                    <span th:text="${item.quantity} + 'x ' + ${item.product.name}">1x Laptop</span>
+                                </div>
+                            </td>
+                            <td>
+                                <strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT')}">$0.00</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-secondary border" th:text="${order.paymentMethod}">Credit Card</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-soft-success" th:text="${order.status}">COMPLETED</span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{/purchases/{id}(id=${order.id})}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-receipt me-1"></i> Invoice
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${orderPage.empty}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-receipt-cutoff fs-1 d-block mb-2 text-secondary"></i>
+                                No orders found matching filter criteria.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div th:if="${totalPages > 1}" class="p-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="small text-muted" th:text="'Page ' + (${currentPage} + 1) + ' of ' + ${totalPages}">Page 1 of 3</span>
+                    <nav aria-label="Purchase pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/purchases(page=${currentPage - 1}, search=${search}, customerId=${selectedCustomerId}, category=${selectedCategory}, startDate=${startDate}, endDate=${endDate})}">Previous</a>
+                            </li>
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                class="page-item" th:classappend="${currentPage == i ? 'active' : ''}">
+                                <a class="page-link" th:href="@{/purchases(page=${i}, search=${search}, customerId=${selectedCustomerId}, category=${selectedCategory}, startDate=${startDate}, endDate=${endDate})}" th:text="${i + 1}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/purchases(page=${currentPage + 1}, search=${search}, customerId=${selectedCustomerId}, category=${selectedCategory}, startDate=${startDate}, endDate=${endDate})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+</body>
+</html>

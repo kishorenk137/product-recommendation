@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title != null ? title + ' - Customer Insights' : 'Customer Insights & Recommendations'}">Customer Insights</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Dashboard CSS -->
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+<div class="app-container">
+    <!-- App Sidebar -->
+    <aside class="app-sidebar" th:fragment="sidebar">
+        <div class="sidebar-header">
+            <a th:href="@{/dashboard}" class="sidebar-brand">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span>InsightsAI</span>
+            </a>
+            <small class="text-white-50 d-block mt-1" style="font-size: 0.72rem;">Customer Analytics &amp; Predictions</small>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li class="nav-section-title">Core Analytics</li>
+            <li class="nav-item">
+                <a th:href="@{/dashboard}" class="nav-link" th:classappend="${activeNav == 'dashboard' ? 'active' : ''}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Store Management</li>
+            <li class="nav-item">
+                <a th:href="@{/customers}" class="nav-link" th:classappend="${activeNav == 'customers' ? 'active' : ''}">
+                    <i class="bi bi-people-fill"></i>
+                    <span>Customers</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/products}" class="nav-link" th:classappend="${activeNav == 'products' ? 'active' : ''}">
+                    <i class="bi bi-box-seam-fill"></i>
+                    <span>Products</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/purchases}" class="nav-link" th:classappend="${activeNav == 'purchases' ? 'active' : ''}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Purchase History</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Intelligence Engine</li>
+            <li class="nav-item">
+                <a th:href="@{/patterns}" class="nav-link" th:classappend="${activeNav == 'patterns' ? 'active' : ''}">
+                    <i class="bi bi-diagram-3-fill"></i>
+                    <span>Purchase Patterns</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/recommendations}" class="nav-link" th:classappend="${activeNav == 'recommendations' ? 'active' : ''}">
+                    <i class="bi bi-stars"></i>
+                    <span>Recommendations</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/predictions}" class="nav-link" th:classappend="${activeNav == 'predictions' ? 'active' : ''}">
+                    <i class="bi bi-cpu-fill"></i>
+                    <span>Preference Prediction</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/segments}" class="nav-link" th:classappend="${activeNav == 'segments' ? 'active' : ''}">
+                    <i class="bi bi-pie-chart-fill"></i>
+                    <span>Segmentation</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Reporting</li>
+            <li class="nav-item">
+                <a th:href="@{/reports}" class="nav-link" th:classappend="${activeNav == 'reports' ? 'active' : ''}">
+                    <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                    <span>Reports &amp; Export</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <form th:action="@{/logout}" method="post" class="d-inline w-100">
+                <button type="submit" class="btn btn-outline-light btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Sign Out</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- App Main Area -->
+    <div class="app-main">
+        <!-- Topbar -->
+        <header class="app-topbar" th:fragment="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggler" type="button" aria-label="Toggle sidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="d-none d-md-block">
+                    <h6 class="mb-0 fw-semibold text-secondary" style="font-size: 0.95rem;">Personalized Customer Insights Platform</h6>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="admin-badge">
+                    <div class="admin-avatar">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="d-none d-sm-block text-start">
+                        <div class="fw-semibold" style="font-size: 0.85rem; line-height: 1.1;" sec:authentication="name">admin</div>
+                        <small class="text-muted" style="font-size: 0.72rem;">Administrator</small>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages Block -->
+        <div class="px-4 pt-3" th:fragment="alerts">
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <div th:text="${successMessage}">Operation successful!</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <div th:text="${errorMessage}">An error occurred!</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- Dynamic Content -->
+        <main class="app-content">
+            <!-- Child templates inject content here -->
+        </main>
+    </div>
+</div>
+
+<!-- Scripts Fragment -->
+<div th:fragment="scripts">
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <!-- Custom Dashboard Scripts -->
+    <script th:src="@{/js/dashboard.js}"></script>
+</div>
+</body>
+</html>

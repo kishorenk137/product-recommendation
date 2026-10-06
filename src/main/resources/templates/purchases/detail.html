@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Order #' + ${order.id})}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3 d-print-none">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/purchases}" class="text-decoration-none">Purchase History</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="'Order #' + ${order.id}">Order Detail</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
+                <div>
+                    <h3 class="fw-bold mb-0 text-dark">Invoice &amp; Transaction Details</h3>
+                    <p class="text-muted mb-0" th:text="'Order Ref #' + ${order.id}">Order #1001</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i> Print Invoice
+                    </button>
+                    <a th:href="@{/purchases}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </a>
+                </div>
+            </div>
+
+            <!-- Invoice Card -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    <!-- Invoice Header -->
+                    <div class="row pb-4 border-bottom mb-4">
+                        <div class="col-sm-6">
+                            <h4 class="fw-bold text-primary mb-1"><i class="bi bi-graph-up-arrow me-2"></i>InsightsAI Store</h4>
+                            <p class="text-muted small mb-0">Customer Intelligence &amp; Analytics Platform</p>
+                            <p class="text-muted small">San Francisco, CA &bull; support@insightsai.internal</p>
+                        </div>
+                        <div class="col-sm-6 text-sm-end">
+                            <h5 class="fw-bold text-dark mb-1" th:text="'INVOICE #' + ${order.id}">INVOICE #1001</h5>
+                            <div class="text-muted small">Date: <strong th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}">Oct 01, 2026</strong></div>
+                            <div class="mt-2">
+                                <span class="badge badge-soft-success fs-6" th:text="${order.status}">COMPLETED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer & Payment Details -->
+                    <div class="row mb-4">
+                        <div class="col-sm-6">
+                            <h6 class="fw-bold text-uppercase text-muted small">Customer Billed To:</h6>
+                            <h5 class="fw-bold mb-1">
+                                <a th:href="@{/customers/view/{id}(id=${order.customer.id})}" class="text-dark text-decoration-none" th:text="${order.customer.name}">Customer Name</a>
+                            </h5>
+                            <div class="text-muted small" th:text="${order.customer.email}">email@example.com</div>
+                            <div class="text-muted small" th:if="${order.customer.phone}" th:text="${order.customer.phone}">+1-555</div>
+                            <div class="text-muted small" th:text="'Destination: ' + ${order.shippingAddress}">Seattle, WA</div>
+                        </div>
+                        <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
+                            <h6 class="fw-bold text-uppercase text-muted small">Payment Details:</h6>
+                            <div class="text-dark fw-semibold" th:text="${order.paymentMethod}">Credit Card</div>
+                            <div class="text-muted small">Payment Status: <strong class="text-success">Verified / Paid</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Line Items Table -->
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="item, stat : ${order.items}">
+                                <td th:text="${stat.count}">1</td>
+                                <td>
+                                    <strong class="text-dark" th:text="${item.product.name}">Product Name</strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-soft-primary" th:text="${item.product.category}">Category</span>
+                                </td>
+                                <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(item.unitPrice, 1, 2)}">$0.00</td>
+                                <td class="text-center" th:text="${item.quantity}">1</td>
+                                <td class="text-end"><strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(item.totalPrice, 1, 2)}">$0.00</strong></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="row justify-content-end">
+                        <div class="col-sm-6 col-md-4">
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Subtotal:</span>
+                                <strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT')}">$0.00</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Sales Tax (0%):</span>
+                                <span class="text-muted">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 fs-5">
+                                <span class="fw-bold text-dark">Total Paid:</span>
+                                <strong class="text-primary" th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT')}">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+</body>
+</html>

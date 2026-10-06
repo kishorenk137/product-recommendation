@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Analytics Reports & CSV Export')}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark">Reports &amp; Data Export</h3>
+                    <p class="text-muted mb-0">Generate business reports across sales, customers, catalog popularity, preferences, and segmentation.</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a th:href="@{/reports/export/csv(type=${reportType}, startDate=${startDate}, endDate=${endDate})}"
+                       class="btn btn-success d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                        <span>Export CSV</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Report Type Navigation Tabs -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <ul class="nav nav-pills gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${reportType == 'sales' ? 'active' : ''}"
+                               th:href="@{/reports(type='sales', startDate=${startDate}, endDate=${endDate})}">
+                                <i class="bi bi-graph-up me-1"></i> Sales Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${reportType == 'customers' ? 'active' : ''}"
+                               th:href="@{/reports(type='customers')}">
+                                <i class="bi bi-people me-1"></i> Customer Purchase Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${reportType == 'products' ? 'active' : ''}"
+                               th:href="@{/reports(type='products')}">
+                                <i class="bi bi-box-seam me-1"></i> Product Popularity Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${reportType == 'preferences' ? 'active' : ''}"
+                               th:href="@{/reports(type='preferences')}">
+                                <i class="bi bi-pie-chart me-1"></i> Preference Category Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:classappend="${reportType == 'segments' ? 'active' : ''}"
+                               th:href="@{/reports(type='segments')}">
+                                <i class="bi bi-tags me-1"></i> Segmentation Report
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Date Filter (Displayed only for date-filterable reports like Sales) -->
+                    <div th:if="${reportType == 'sales'}" class="mt-3 pt-3 border-top">
+                        <form th:action="@{/reports}" method="get" class="row g-2 align-items-center">
+                            <input type="hidden" name="type" th:value="${reportType}">
+                            <div class="col-auto">
+                                <span class="small fw-semibold text-muted">Date Filter:</span>
+                            </div>
+                            <div class="col-auto">
+                                <input type="date" name="startDate" th:value="${startDate}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-auto">
+                                <span class="small text-muted">to</span>
+                            </div>
+                            <div class="col-auto">
+                                <input type="date" name="endDate" th:value="${endDate}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary btn-sm px-3">Apply Range</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Content Preview Table -->
+            <div class="table-card">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <span th:if="${reportType == 'sales'}">Completed Sales Transactions</span>
+                            <span th:if="${reportType == 'customers'}">Customer Lifetime Purchase Summary</span>
+                            <span th:if="${reportType == 'products'}">Product Catalog Velocity &amp; Revenue</span>
+                            <span th:if="${reportType == 'preferences'}">Category Preference &amp; Sales Share</span>
+                            <span th:if="${reportType == 'segments'}">Customer Segmentation Summary</span>
+                        </h5>
+                        <small class="text-muted">Previewing live dataset available for CSV export</small>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <!-- 1. SALES REPORT TABLE -->
+                    <table th:if="${reportType == 'sales'}" class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Order Date</th>
+                            <th>Payment Method</th>
+                            <th>Status</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="o : ${reportData}">
+                            <td><strong class="text-primary" th:text="'#' + ${o.id}">#1</strong></td>
+                            <td>
+                                <div class="fw-semibold text-dark" th:text="${o.customer.name}">Customer</div>
+                                <small class="text-muted" th:text="${o.customer.email}">email</small>
+                            </td>
+                            <td class="small" th:text="${#temporals.format(o.orderDate, 'yyyy-MM-dd HH:mm')}">Date</td>
+                            <td th:text="${o.paymentMethod}">Credit Card</td>
+                            <td><span class="badge badge-soft-success" th:text="${o.status}">COMPLETED</span></td>
+                            <td class="text-end"><strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(o.totalAmount, 1, 2)}">$100</strong></td>
+                        </tr>
+                        <tr th:if="${reportData.empty}">
+                            <td colspan="6" class="text-center py-4 text-muted">No sales orders found for the specified date range.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 2. CUSTOMER PURCHASE REPORT TABLE -->
+                    <table th:if="${reportType == 'customers'}" class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>City</th>
+                            <th>Registration Date</th>
+                            <th class="text-center">Total Orders</th>
+                            <th class="text-end">Lifetime Spent</th>
+                            <th>Favorite Category</th>
+                            <th class="text-end">Segment</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${reportData}">
+                            <td>
+                                <strong class="text-dark" th:text="${c.name}">Name</strong>
+                                <div class="small text-muted" th:text="${c.email}">email</div>
+                            </td>
+                            <td class="small" th:text="${c.city}">City</td>
+                            <td class="small" th:text="${#temporals.format(c.registrationDate, 'yyyy-MM-dd')}">Date</td>
+                            <td class="text-center" th:text="${c.totalPurchases}">3</td>
+                            <td class="text-end fw-bold text-primary" th:text="'$' + ${#numbers.formatDecimal(c.totalSpent, 1, 2)}">$500</td>
+                            <td><span class="badge badge-soft-info" th:text="${c.preferredCategory}">Electronics</span></td>
+                            <td class="text-end"><span class="badge badge-soft-secondary" th:text="${c.segment}">Segment</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 3. PRODUCT POPULARITY REPORT TABLE -->
+                    <table th:if="${reportType == 'products'}" class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Product ID</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th class="text-center">Units Sold</th>
+                            <th class="text-end">Total Revenue</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="p : ${reportData}">
+                            <td><strong class="text-muted" th:text="'#' + ${p.productId}">#1</strong></td>
+                            <td class="fw-semibold text-dark" th:text="${p.productName}">Product</td>
+                            <td><span class="badge badge-soft-primary" th:text="${p.category}">Category</span></td>
+                            <td class="text-center fw-bold" th:text="${p.quantitySold}">25</td>
+                            <td class="text-end text-success fw-bold" th:text="'$' + ${#numbers.formatDecimal(p.totalRevenue, 1, 2)}">$1,200</td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 4. PREFERENCE CATEGORY REPORT TABLE -->
+                    <table th:if="${reportType == 'preferences'}" class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th class="text-center">Total Orders</th>
+                            <th class="text-center">Units Purchased</th>
+                            <th class="text-end">Gross Revenue</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="cat : ${reportData}">
+                            <td><strong class="text-dark fs-6" th:text="${cat.category}">Category</strong></td>
+                            <td class="text-center" th:text="${cat.orderCount}">15</td>
+                            <td class="text-center" th:text="${cat.quantitySold}">35</td>
+                            <td class="text-end fw-bold text-primary" th:text="'$' + ${#numbers.formatDecimal(cat.totalRevenue, 1, 2)}">$3,500</td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 5. SEGMENTATION REPORT TABLE -->
+                    <table th:if="${reportType == 'segments'}" class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Segment Name</th>
+                            <th>Business Criteria</th>
+                            <th class="text-center">Customers Count</th>
+                            <th class="text-end">Average Customer Spend</th>
+                            <th class="text-end">Total Cohort Revenue</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="seg : ${reportData}">
+                            <td><span class="badge fs-6" th:classappend="${seg.badgeClass}" th:text="${seg.segmentName}">Segment</span></td>
+                            <td class="small text-muted" th:text="${seg.criteria}">Criteria</td>
+                            <td class="text-center fw-bold" th:text="${seg.customerCount}">5</td>
+                            <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(seg.averageSpend, 1, 2)}">$250</td>
+                            <td class="text-end fw-bold text-success" th:text="'$' + ${#numbers.formatDecimal(seg.totalRevenue, 1, 2)}">$2,500</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Product Management')}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark">Product Management</h3>
+                    <p class="text-muted mb-0">Manage catalog products, categories, unit pricing, and stock inventory.</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a th:href="@{/products/new}" class="btn btn-primary d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span>Add New Product</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Low Stock Banner if any -->
+            <div th:if="${lowStockCount > 0}" class="alert alert-warning d-flex align-items-center shadow-sm mb-4">
+                <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                <div>
+                    <strong>Inventory Alert:</strong> <span th:text="${lowStockCount}">0</span> product(s) have low stock (20 units or fewer). Please review stock levels.
+                </div>
+            </div>
+
+            <!-- Filter & Search Toolbar -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/products}" method="get" class="row g-2 align-items-center">
+                        <div class="col-12 col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="search" th:value="${search}" class="form-control border-start-0" placeholder="Search by product name or description...">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <select name="category" class="form-select">
+                                <option value="ALL" th:selected="${selectedCategory == 'ALL'}">All Categories</option>
+                                <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat}" th:selected="${selectedCategory == cat}">Category</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Filter</button>
+                            <a th:href="@{/products}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Products Table Card -->
+            <div class="table-card">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Showing <strong class="text-dark" th:text="${productPage.numberOfElements}">0</strong> of <strong class="text-dark" th:text="${totalElements}">0</strong> products</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Unit Price</th>
+                            <th>Stock Level</th>
+                            <th>Description</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="product : ${productPage.content}">
+                            <td><strong class="text-muted" th:text="'#' + ${product.id}">#1</strong></td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${product.name}">Product Name</div>
+                            </td>
+                            <td>
+                                <span class="badge badge-soft-primary" th:text="${product.category}">Electronics</span>
+                            </td>
+                            <td>
+                                <strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 'COMMA', 2, 'POINT')}">$0.00</strong>
+                            </td>
+                            <td>
+                                <span th:if="${product.stockQuantity == 0}" class="badge bg-danger">Out of Stock</span>
+                                <span th:if="${product.stockQuantity > 0 and product.stockQuantity <= 20}" class="badge bg-warning text-dark" th:text="${product.stockQuantity} + ' left (Low)'">10 left</span>
+                                <span th:if="${product.stockQuantity > 20}" class="badge badge-soft-success" th:text="${product.stockQuantity} + ' in stock'">50 in stock</span>
+                            </td>
+                            <td>
+                                <div class="text-muted small text-truncate" style="max-width: 280px;" th:text="${product.description}">Product description</div>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{/products/edit/{id}(id=${product.id})}" class="btn btn-outline-primary" title="Edit Product">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" title="Delete Product"
+                                            th:data-id="${product.id}"
+                                            th:data-name="${product.name}"
+                                            onclick="openDeleteProductModal(this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${productPage.empty}">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-box-seam fs-1 d-block mb-2 text-secondary"></i>
+                                No products found matching criteria.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div th:if="${totalPages > 1}" class="p-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="small text-muted" th:text="'Page ' + (${currentPage} + 1) + ' of ' + ${totalPages}">Page 1 of 3</span>
+                    <nav aria-label="Product pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/products(page=${currentPage - 1}, search=${search}, category=${selectedCategory})}">Previous</a>
+                            </li>
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                class="page-item" th:classappend="${currentPage == i ? 'active' : ''}">
+                                <a class="page-link" th:href="@{/products(page=${i}, search=${search}, category=${selectedCategory})}" th:text="${i + 1}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/products(page=${currentPage + 1}, search=${search}, category=${selectedCategory})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-0">Are you sure you want to delete product <strong id="deleteProductName"></strong>?</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteProductForm" method="post" action="">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="btn btn-danger btn-sm">Yes, Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+
+<script>
+    function openDeleteProductModal(id, name) {
+        document.getElementById('deleteProductName').innerText = name;
+        document.getElementById('deleteProductForm').action = '/products/delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteProductModal')).show();
+    }
+</script>
+</body>
+</html>

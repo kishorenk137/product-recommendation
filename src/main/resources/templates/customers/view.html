@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Customer Profile - ' + ${customer.name})}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/customers}" class="text-decoration-none">Customers</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${customer.name}">Customer Profile</li>
+                </ol>
+            </nav>
+
+            <!-- Profile Header Card -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4 overflow-hidden">
+                <div class="card-body p-4 bg-white">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-3"
+                                 style="width: 68px; height: 68px;">
+                                <span th:text="${customer.name.substring(0, 1)}">A</span>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <h3 class="fw-bold mb-0 text-dark" th:text="${customer.name}">Customer Name</h3>
+                                    <span class="badge"
+                                          th:classappend="${summary.segment == 'High-Spending Customer' ? 'badge-soft-success' :
+                                                          (summary.segment == 'Frequent Buyer' ? 'badge-soft-primary' :
+                                                          (summary.segment == 'Occasional Buyer' ? 'badge-soft-info' :
+                                                          (summary.segment == 'New Customer' ? 'badge-soft-warning' : 'badge-soft-secondary')))}"
+                                          th:text="${summary.segment}">Frequent Buyer</span>
+                                </div>
+                                <div class="text-muted small mt-1 d-flex flex-wrap gap-3">
+                                    <span><i class="bi bi-envelope me-1"></i> <span th:text="${customer.email}">email@example.com</span></span>
+                                    <span th:if="${customer.phone}"><i class="bi bi-telephone me-1"></i> <span th:text="${customer.phone}">+1-555</span></span>
+                                    <span th:if="${customer.city}"><i class="bi bi-geo-alt me-1"></i> <span th:text="${customer.city}">Seattle, WA</span></span>
+                                    <span><i class="bi bi-calendar3 me-1"></i> Member since <span th:text="${#temporals.format(customer.registrationDate, 'MMM dd, yyyy')}">Jan 2026</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-3 mt-lg-0">
+                            <a th:href="@{/customers/edit/{id}(id=${customer.id})}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil me-1"></i> Edit Profile
+                            </a>
+                            <a th:href="@{/predictions(customerId=${customer.id})}" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-cpu me-1"></i> Predict Preferences
+                            </a>
+                            <a th:href="@{/recommendations(customerId=${customer.id})}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-stars me-1"></i> View Recommendations
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Summary Metrics -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <span class="metric-title">Total Orders</span>
+                        <div class="metric-value" th:text="${summary.totalPurchases}">0</div>
+                        <small class="text-muted">Lifetime transactions</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <span class="metric-title">Lifetime Spending</span>
+                        <div class="metric-value text-primary" th:text="'$' + ${#numbers.formatDecimal(summary.totalSpent, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+                        <small class="text-success"><i class="bi bi-graph-up me-1"></i> Completed orders</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <span class="metric-title">Preferred Category</span>
+                        <div class="metric-value fs-4 text-truncate" th:text="${summary.preferredCategory}">Electronics</div>
+                        <small class="text-muted">Based on frequency &amp; spend</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="metric-card">
+                        <span class="metric-title">Account Status</span>
+                        <div class="metric-value fs-4">
+                            <span th:if="${customer.status == 'ACTIVE'}" class="text-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+                            <span th:if="${customer.status == 'INACTIVE'}" class="text-secondary"><i class="bi bi-pause-circle me-1"></i>Inactive</span>
+                        </div>
+                        <small class="text-muted">Customer state</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personalized Recommendations For This Customer -->
+            <div class="mb-4" th:if="${!recommendations.empty}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-stars text-primary me-2"></i>Personalized Product Recommendations</h5>
+                    <a th:href="@{/recommendations(customerId=${customer.id})}" class="btn btn-sm btn-link text-decoration-none">Full Engine Details &rarr;</a>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6 col-xl-3" th:each="rec : ${recommendations}">
+                        <div class="recommendation-card p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge badge-soft-primary" th:text="${rec.category}">Category</span>
+                                <span class="badge bg-success" th:text="${rec.confidenceScore} + '% Match'">95% Match</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1" th:text="${rec.productName}">Product Name</h6>
+                            <div class="fw-bold text-primary mb-2" th:text="'$' + ${#numbers.formatDecimal(rec.price, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+                            <p class="text-muted small mb-3 flex-grow-1" th:text="${rec.recommendationReason}">Recommendation reason</p>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Relevance Confidence</span>
+                                    <strong th:text="${rec.confidenceScore} + '%'">90%</strong>
+                                </div>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" th:style="'width: ' + ${rec.confidenceScore} + '%'"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Purchase History Table -->
+            <div class="table-card">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Purchase History (<span th:text="${orders.size()}">0</span>)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Purchased Items</th>
+                            <th>Payment</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="order : ${orders}">
+                            <td><strong class="text-primary" th:text="'#' + ${order.id}">#1</strong></td>
+                            <td th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}">Oct 01, 2026</td>
+                            <td>
+                                <div th:each="item : ${order.items}" class="small text-truncate" style="max-width: 320px;">
+                                    <span th:text="${item.quantity} + 'x ' + ${item.product.name}">1x Laptop</span>
+                                    <span class="text-muted" th:text="' ($' + ${#numbers.formatDecimal(item.totalPrice, 1, 2)} + ')'">($100)</span>
+                                </div>
+                            </td>
+                            <td th:text="${order.paymentMethod}">Credit Card</td>
+                            <td><strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT')}">$0.00</strong></td>
+                            <td>
+                                <span class="badge badge-soft-success" th:text="${order.status}">COMPLETED</span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{/purchases/{id}(id=${order.id})}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-receipt me-1"></i> Invoice
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${orders.empty}">
+                            <td colspan="7" class="text-center py-4 text-muted">No purchase records found for this customer.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+</body>
+</html>

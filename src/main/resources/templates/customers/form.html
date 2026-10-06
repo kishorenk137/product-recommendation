@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head(${isEdit ? 'Edit Customer' : 'Add New Customer'})}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/customers}" class="text-decoration-none">Customers</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Edit Customer' : 'New Customer'}">Customer Form</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold mb-0 text-dark" th:text="${isEdit ? 'Edit Customer Details' : 'Register New Customer'}">Customer Form</h3>
+                <a th:href="@{/customers}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <form th:action="${isEdit ? '/customers/edit/' + customerForm.id : '/customers/new'}"
+                          th:object="${customerForm}"
+                          method="post" class="row g-3">
+
+                        <input type="hidden" th:field="*{id}" />
+
+                        <!-- Customer Full Name -->
+                        <div class="col-12 col-md-6">
+                            <label for="name" class="form-label fw-semibold">Customer Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" placeholder="e.g. John Doe" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</div>
+                        </div>
+
+                        <!-- Email Address -->
+                        <div class="col-12 col-md-6">
+                            <label for="email" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" th:field="*{email}"
+                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" placeholder="name@example.com" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Email error</div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="col-12 col-md-4">
+                            <label for="phone" class="form-label fw-semibold">Phone Number</label>
+                            <input type="text" class="form-control" id="phone" th:field="*{phone}" placeholder="+1-555-0123">
+                        </div>
+
+                        <!-- City -->
+                        <div class="col-12 col-md-4">
+                            <label for="city" class="form-label fw-semibold">City &amp; State</label>
+                            <input type="text" class="form-control" id="city" th:field="*{city}" placeholder="e.g. San Francisco, CA">
+                        </div>
+
+                        <!-- Registration Date -->
+                        <div class="col-12 col-md-4">
+                            <label for="registrationDate" class="form-label fw-semibold">Registration Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="registrationDate" th:field="*{registrationDate}"
+                                   th:classappend="${#fields.hasErrors('registrationDate')} ? 'is-invalid' : ''" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('registrationDate')}" th:errors="*{registrationDate}">Date error</div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-12 col-md-6">
+                            <label for="status" class="form-label fw-semibold">Account Status</label>
+                            <select class="form-select" id="status" th:field="*{status}">
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="col-12 mt-4 pt-3 border-top d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                <span th:text="${isEdit ? 'Save Changes' : 'Create Customer'}">Submit</span>
+                            </button>
+                            <a th:href="@{/customers}" class="btn btn-light px-3">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Customer Segmentation')}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark">Rule-Based Customer Segmentation</h3>
+                    <p class="text-muted mb-0">Categorize customer cohorts using transparent, configurable business criteria to drive personalized retention.</p>
+                </div>
+            </div>
+
+            <!-- Segment Business Rules Explanation Card -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-gear-wide-connected text-primary me-2"></i>Documented Business Segmentation Rules</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6 col-lg-4" th:each="seg : ${segments}">
+                            <div class="p-3 rounded-3 border h-100" style="background-color: #f8fafc;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge" th:classappend="${seg.badgeClass}" th:text="${seg.segmentName}">Segment</span>
+                                </div>
+                                <div class="small text-dark fw-bold mb-1" th:text="'Criteria: ' + ${seg.criteria}">Criteria</div>
+                                <p class="small text-muted mb-0" th:text="${seg.description}">Description</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segment Distribution Chart & Summary Cards -->
+            <div class="row g-4 mb-4">
+                <!-- Segments Metric Cards -->
+                <div class="col-12 col-lg-7">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6" th:each="seg : ${segments}">
+                            <div class="metric-card h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge" th:classappend="${seg.badgeClass}" th:text="${seg.segmentName}">Segment</span>
+                                    <strong class="fs-4 text-dark" th:text="${seg.customerCount}">0</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Total Revenue:</span>
+                                    <strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(seg.totalRevenue, 1, 2)}">$0</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span>Average Spend:</span>
+                                    <span class="text-primary fw-semibold" th:text="'$' + ${#numbers.formatDecimal(seg.averageSpend, 1, 2)}">$0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Polar Area Chart -->
+                <div class="col-12 col-lg-5">
+                    <div class="chart-card h-100 mb-0">
+                        <div class="chart-header">
+                            <div>
+                                <h5 class="chart-title">Cohort Distribution</h5>
+                                <small class="text-muted">Proportion of customers in each segment</small>
+                            </div>
+                        </div>
+                        <div style="position: relative; height: 260px;">
+                            <canvas id="segmentDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Breakdown Accordion / Tables by Segment -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Customers Grouped By Segment</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="accordion accordion-flush" id="segmentAccordion">
+                        <div class="accordion-item" th:each="seg, stat : ${segments}">
+                            <h2 class="accordion-header" th:id="'heading' + ${stat.index}">
+                                <button class="accordion-button" th:classappend="${stat.first ? '' : 'collapsed'}" type="button"
+                                        data-bs-toggle="collapse" th:data-bs-target="'#collapse' + ${stat.index}"
+                                        th:aria-expanded="${stat.first ? 'true' : 'false'}">
+                                    <span class="badge me-2" th:classappend="${seg.badgeClass}" th:text="${seg.segmentName}">Segment</span>
+                                    <span class="text-muted small ms-1" th:text="'(' + ${seg.customerCount} + ' customers, avg spend $' + ${#numbers.formatDecimal(seg.averageSpend, 1, 2)} + ')'">Details</span>
+                                </button>
+                            </h2>
+                            <div th:id="'collapse' + ${stat.index}" class="accordion-collapse collapse"
+                                 th:classappend="${stat.first ? 'show' : ''}" data-bs-parent="#segmentAccordion">
+                                <div class="accordion-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead>
+                                            <tr>
+                                                <th>Customer</th>
+                                                <th>Email</th>
+                                                <th>City</th>
+                                                <th>Registered</th>
+                                                <th class="text-center">Orders</th>
+                                                <th class="text-end">Total Spent</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr th:each="c : ${seg.customers}">
+                                                <td>
+                                                    <a th:href="@{/customers/view/{id}(id=${c.id})}" class="fw-bold text-dark text-decoration-none" th:text="${c.name}">Name</a>
+                                                </td>
+                                                <td class="text-muted small" th:text="${c.email}">email</td>
+                                                <td class="small" th:text="${c.city}">City</td>
+                                                <td class="small" th:text="${#temporals.format(c.registrationDate, 'MMM dd, yyyy')}">Date</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-light text-dark border" th:text="${c.totalPurchases}">1</span>
+                                                </td>
+                                                <td class="text-end fw-bold text-primary" th:text="'$' + ${#numbers.formatDecimal(c.totalSpent, 1, 2)}">$100</td>
+                                                <td class="text-end">
+                                                    <a th:href="@{/customers/view/{id}(id=${c.id})}" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-eye"></i> Profile
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <tr th:if="${seg.customers.empty}">
+                                                <td colspan="7" class="text-center py-3 text-muted">No customers currently fall into this segment.</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        /*[# th:if="${segments != null}"]*/
+        const segLabels = /*[[${segments.![segmentName]}]]*/ [];
+        const segCounts = /*[[${segments.![customerCount]}]]*/ [];
+        AnalyticsCharts.initSegmentChart('segmentDistributionChart', segLabels, segCounts);
+        /*[/]*/
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Customer Preference Prediction')}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark">Customer Preference Prediction</h3>
+                    <p class="text-muted mb-0">Project likely future product interests using purchase counts, spending volume, and recency-weighted decay scoring.</p>
+                </div>
+            </div>
+
+            <!-- Customer Selector Bar -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/predictions}" method="get" class="row g-2 align-items-center">
+                        <div class="col-12 col-md-8">
+                            <label for="customerId" class="form-label small fw-semibold text-muted mb-1">
+                                <i class="bi bi-person-circle me-1 text-primary"></i> Select Customer for Behavioral Prediction:
+                            </label>
+                            <select name="customerId" id="customerId" class="form-select" onchange="this.form.submit()">
+                                <option th:each="c : ${customers}"
+                                        th:value="${c.id}"
+                                        th:text="${c.name} + ' — ' + ${c.email} + ' (' + ${c.city} + ')'"
+                                        th:selected="${selectedCustomer != null && selectedCustomer.id == c.id}">
+                                    Customer
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-cpu me-1"></i> Run Prediction Model
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div th:if="${prediction != null}">
+                <!-- Insufficient Data Warning Banner -->
+                <div th:if="${!prediction.hasSufficientData}" class="card border-0 shadow-sm rounded-3 mb-4 border-start border-warning border-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="fs-1 text-warning"><i class="bi bi-shield-exclamation"></i></div>
+                            <div>
+                                <h4 class="fw-bold text-dark mb-1">Insufficient Purchase History</h4>
+                                <p class="text-secondary mb-2" th:text="${prediction.predictionReasons[0]}">
+                                    Customer has fewer than 2 completed orders. A minimum of 2 orders is required to formulate reliable behavioral projections.
+                                </p>
+                                <div class="alert alert-warning py-2 px-3 small mb-0 d-inline-block">
+                                    <i class="bi bi-info-circle me-1"></i> Statistical preference prediction is deferred until more purchase records are accumulated to prevent deceptive bias.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sufficient Data View -->
+                <div th:if="${prediction.hasSufficientData}">
+                    <!-- Prediction Highlight Banner -->
+                    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white overflow-hidden">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-lg-8">
+                                    <span class="badge badge-soft-primary px-3 py-2 mb-2 fs-6">
+                                        <i class="bi bi-stars me-1"></i> Top Predicted Category Interest
+                                    </span>
+                                    <h2 class="fw-bold text-dark mb-2" th:text="${prediction.topPredictedCategory}">Electronics</h2>
+                                    <div class="text-secondary small">
+                                        Calculated from <strong class="text-dark" th:text="${prediction.totalOrders}">4</strong> completed transactions, spending <strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(prediction.totalSpent, 1, 2)}">$1,200</strong>, with higher weighting for orders placed in the past 45 days.
+                                    </div>
+                                </div>
+                                <div class="col-lg-4 mt-3 mt-lg-0 text-lg-end">
+                                    <div class="d-inline-block p-3 bg-light rounded-3 border text-center">
+                                        <small class="text-muted d-block fw-semibold">Model Confidence Score</small>
+                                        <span class="display-6 fw-bold text-primary" th:text="${prediction.predictionConfidence} + '%'">85%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown Table & Affinity Chart -->
+                    <div class="row g-4 mb-4">
+                        <!-- Breakdown Table -->
+                        <div class="col-12 col-lg-7">
+                            <div class="table-card h-100">
+                                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <h5 class="fw-bold mb-0 text-dark">Category Affinity Breakdown</h5>
+                                    <span class="badge badge-soft-info">Recency-Weighted</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                            <th class="text-center">Units</th>
+                                            <th class="text-center">Freq Share</th>
+                                            <th class="text-end">Spend</th>
+                                            <th class="text-center">Recency</th>
+                                            <th class="text-end">Affinity Score</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="cat : ${prediction.categoryPreferences}">
+                                            <td>
+                                                <strong class="text-dark" th:text="${cat.category}">Category</strong>
+                                            </td>
+                                            <td class="text-center" th:text="${cat.purchaseCount}">5</td>
+                                            <td class="text-center" th:text="${cat.frequencyShare} + '%'">50%</td>
+                                            <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(cat.totalSpent, 1, 2)}">$500</td>
+                                            <td class="text-center">
+                                                <span th:if="${cat.daysSinceLastPurchase != null and cat.daysSinceLastPurchase <= 45}" class="badge badge-soft-success" th:text="${cat.daysSinceLastPurchase} + 'd ago (1.5x)'">12d ago</span>
+                                                <span th:if="${cat.daysSinceLastPurchase != null and cat.daysSinceLastPurchase > 45}" class="badge badge-soft-secondary" th:text="${cat.daysSinceLastPurchase} + 'd ago'">80d ago</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong class="text-primary" th:text="${cat.affinityScore} + '%'">85%</strong>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Affinity Chart -->
+                        <div class="col-12 col-lg-5">
+                            <div class="chart-card h-100 mb-0">
+                                <div class="chart-header">
+                                    <div>
+                                        <h5 class="chart-title">Preference Distribution</h5>
+                                        <small class="text-muted">Relative affinity across categories</small>
+                                    </div>
+                                </div>
+                                <div style="position: relative; height: 260px;">
+                                    <canvas id="predictionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transparent Explainability / Rationale Card -->
+                    <div class="card border-0 shadow-sm rounded-3">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Explainable Prediction Rationale</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-0 d-flex align-items-start gap-2" th:each="reason : ${prediction.predictionReasons}">
+                                    <i class="bi bi-check-circle-fill text-primary mt-1"></i>
+                                    <span class="text-dark" th:text="${reason}">Prediction rationale description.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        /*[# th:if="${prediction != null and prediction.hasSufficientData}"]*/
+        const prefLabels = /*[[${prediction.categoryPreferences.![category]}]]*/ [];
+        const prefScores = /*[[${prediction.categoryPreferences.![affinityScore]}]]*/ [];
+        AnalyticsCharts.initPreferenceChart('predictionChart', prefLabels, prefScores);
+        /*[/]*/
+    });
+</script>
+</body>
+</html>

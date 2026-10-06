@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/main :: head('Customer Management')}"></head>
+<body>
+<div class="app-container">
+    <aside th:replace="~{layout/main :: sidebar}"></aside>
+
+    <div class="app-main">
+        <header th:replace="~{layout/main :: topbar}"></header>
+        <div th:replace="~{layout/main :: alerts}"></div>
+
+        <main class="app-content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark">Customer Management</h3>
+                    <p class="text-muted mb-0">Browse customers, monitor purchase activity, view profiles, and update details.</p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <a th:href="@{/customers/new}" class="btn btn-primary d-flex align-items-center gap-2">
+                        <i class="bi bi-person-plus-fill"></i>
+                        <span>Add New Customer</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filter & Search Toolbar -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/customers}" method="get" class="row g-2 align-items-center">
+                        <div class="col-12 col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="search" th:value="${search}" class="form-control border-start-0" placeholder="Search by name or email address...">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="ALL" th:selected="${status == 'ALL'}">All Statuses</option>
+                                <option value="ACTIVE" th:selected="${status == 'ACTIVE'}">Active Only</option>
+                                <option value="INACTIVE" th:selected="${status == 'INACTIVE'}">Inactive Only</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Filter</button>
+                            <a th:href="@{/customers}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Customers Table Card -->
+            <div class="table-card">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Showing <strong class="text-dark" th:text="${customerPage.numberOfElements}">0</strong> of <strong class="text-dark" th:text="${totalElements}">0</strong> registered customers</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer Name</th>
+                            <th>Email &amp; Location</th>
+                            <th>Registered</th>
+                            <th>Orders</th>
+                            <th>Total Spent</th>
+                            <th>Preferred Category</th>
+                            <th>Segment</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="customer : ${customerPage.content}">
+                            <td><strong class="text-muted" th:text="'#' + ${customer.id}">#1</strong></td>
+                            <td>
+                                <a th:href="@{/customers/view/{id}(id=${customer.id})}" class="fw-bold text-dark text-decoration-none hover-primary" th:text="${customer.name}">Customer Name</a>
+                                <span th:if="${customer.status == 'ACTIVE'}" class="badge badge-soft-success ms-1" style="font-size: 0.65rem;">Active</span>
+                                <span th:if="${customer.status == 'INACTIVE'}" class="badge badge-soft-secondary ms-1" style="font-size: 0.65rem;">Inactive</span>
+                            </td>
+                            <td>
+                                <div class="text-muted small" th:text="${customer.email}">email@example.com</div>
+                                <small class="text-secondary" th:text="${customer.city}">City, State</small>
+                            </td>
+                            <td class="small" th:text="${#temporals.format(customer.registrationDate, 'MMM dd, yyyy')}">Jan 15, 2026</td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2" th:text="${customer.totalPurchases} + ' orders'">3 orders</span>
+                            </td>
+                            <td>
+                                <strong class="text-dark" th:text="'$' + ${#numbers.formatDecimal(customer.totalSpent, 1, 'COMMA', 2, 'POINT')}">$0.00</strong>
+                            </td>
+                            <td>
+                                <span class="badge badge-soft-info" th:text="${customer.preferredCategory}">Electronics</span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${customer.segment == 'High-Spending Customer' ? 'badge-soft-success' :
+                                                      (customer.segment == 'Frequent Buyer' ? 'badge-soft-primary' :
+                                                      (customer.segment == 'Occasional Buyer' ? 'badge-soft-info' :
+                                                      (customer.segment == 'New Customer' ? 'badge-soft-warning' : 'badge-soft-secondary')))}"
+                                      th:text="${customer.segment}">Frequent Buyer</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{/customers/view/{id}(id=${customer.id})}" class="btn btn-outline-secondary" title="View Profile 360">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a th:href="@{/customers/edit/{id}(id=${customer.id})}" class="btn btn-outline-primary" title="Edit Customer">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" title="Delete Customer"
+                                            th:data-id="${customer.id}"
+                                            th:data-name="${customer.name}"
+                                            onclick="openDeleteModal(this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${customerPage.empty}">
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-person-x fs-1 d-block mb-2 text-secondary"></i>
+                                No customers found matching the search criteria.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div th:if="${totalPages > 1}" class="p-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="small text-muted" th:text="'Page ' + (${currentPage} + 1) + ' of ' + ${totalPages}">Page 1 of 3</span>
+                    <nav aria-label="Customer table pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/customers(page=${currentPage - 1}, search=${search}, status=${status})}">Previous</a>
+                            </li>
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                class="page-item" th:classappend="${currentPage == i ? 'active' : ''}">
+                                <a class="page-link" th:href="@{/customers(page=${i}, search=${search}, status=${status})}" th:text="${i + 1}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/customers(page=${currentPage + 1}, search=${search}, status=${status})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-0">Are you sure you want to permanently delete customer <strong id="deleteCustomerName"></strong>? This will remove all their customer records.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteCustomerForm" method="post" action="">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="btn btn-danger btn-sm">Yes, Delete Customer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/main :: scripts}"></div>
+
+<script>
+    function openDeleteModal(id, name) {
+        document.getElementById('deleteCustomerName').innerText = name;
+        document.getElementById('deleteCustomerForm').action = '/customers/delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteCustomerModal')).show();
+    }
+</script>
+</body>
+</html>
